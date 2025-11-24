@@ -165,7 +165,7 @@ namespace BattagliaNavaleEventi
             {
 
                 if (currentPlacement.Count >= 2)
-                    EnableButtonsInLine(playerIdx);
+                    RestrictLineOptions(playerIdx);
             }
         }
 
@@ -185,23 +185,22 @@ namespace BattagliaNavaleEventi
         private void EnsureStraightLineAndRestrict(int playerIdx)
         {
 
-            /*Point a = currentPlacement[0]; Point b = currentPlacement[1];
+            Point a = currentPlacement[0]; Point b = currentPlacement[1];
             if (!(a.X == b.X || a.Y == b.Y))
             {
 
                 var last = currentPlacement[1];
                 ButtonsPlayer[playerIdx][last.Y, last.X].BackColor = Color.LightBlue;
                 currentPlacement.RemoveAt(1);
-                
+                MessageBox.Show("La seconda cella deve essere ortogonale rispetto alla prima.", "Errore posizionamento", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 RestrictNextCellsToAdjacent(playerIdx, a.X, a.Y);
                 return;
-                throw new Exception();
-            }*/
+            }
 
-            EnableButtonsInLine(playerIdx);
+            RestrictLineOptions(playerIdx);
         }
 
-        private void EnableButtonsInLine(int playerIdx)
+        private void RestrictLineOptions(int playerIdx)
         {
 
             var btns = ButtonsPlayer[playerIdx];
@@ -221,13 +220,8 @@ namespace BattagliaNavaleEventi
 
                 for (int add = 1; add <= needed; add++)
                 {
-                    int yy = minY - add;
-                    if (yy >= 0 && GridPlayer[playerIdx][yy, col] == 0)
-                        btns[yy, col].Enabled = true;
-
-                    yy = maxY + add;
-                    if (yy < 10 && GridPlayer[playerIdx][yy, col] == 0)
-                        btns[yy, col].Enabled = true;
+                    int yy = minY - add; if (yy >= 0 && GridPlayer[playerIdx][yy, col] == 0) btns[yy, col].Enabled = true;
+                    yy = maxY + add; if (yy < 10 && GridPlayer[playerIdx][yy, col] == 0) btns[yy, col].Enabled = true;
                 }
             }
             else
@@ -237,12 +231,8 @@ namespace BattagliaNavaleEventi
                 int needed = selectedShipSize - currentPlacement.Count;
                 for (int add = 1; add <= needed; add++)
                 {
-                    int xx = minX - add;
-                    if (xx >= 0 && GridPlayer[playerIdx][row, xx] == 0)
-                        btns[row, xx].Enabled = true;
-                    xx = maxX + add;
-                    if (xx < 10 && GridPlayer[playerIdx][row, xx] == 0)
-                        btns[row, xx].Enabled = true;
+                    int xx = minX - add; if (xx >= 0 && GridPlayer[playerIdx][row, xx] == 0) btns[row, xx].Enabled = true;
+                    xx = maxX + add; if (xx < 10 && GridPlayer[playerIdx][row, xx] == 0) btns[row, xx].Enabled = true;
                 }
             }
         }
@@ -259,11 +249,11 @@ namespace BattagliaNavaleEventi
         }
         private List<Point> OrderPoints(List<Point> points)
         {
-            //Ordina prima per Y, nel caso sia uguale, ordina per X
+            // Ordina prima per Y, poi nel caso essia sia uguale, per X
             points.Sort((a, b) =>
             {
-                if (a.Y != b.Y) return a.Y - b.Y; //confronto Y
-                return a.X - b.X;                  //se Y uguale, confronto X
+                if (a.Y != b.Y) return a.Y - b.Y; // confronto Y
+                return a.X - b.X;                  // se Y uguale, confronto X
             });
             return points.ToList();
         }
@@ -309,21 +299,21 @@ namespace BattagliaNavaleEventi
             bool allPlaced = shipCountsPlayer[playerIdx].Values.All(v => v == 0);
             if (allPlaced)
             {
-                if (multiplayerMode && playerIdx == 0) //non l'ultimo
+                if (multiplayerMode && playerIdx == 0)
                 {
 
                     placementPhaseCompleteForPlayer1 = true;
-                    MessageBox.Show("Giocatore 1 ha finito il posizionamento. Ora tocca al Giocatore 2");
+                    MessageBox.Show("Giocatore 1 ha finito il posizionamento. Ora tocca al Giocatore 2.", "Posizionamento", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     activePlayer = 1;
                     EnableFreeCells(activePlayer);
                     SetGridEnabled(0, false);
                     SetGridEnabled(1, true);
                     SetShipButtonsEnabled(true);
                 }
-                else //ultimo
-                { 
+                else
+                {
 
-                    MessageBox.Show($"Giocatore {playerIdx + 1} ha finito il posizoinamento");
+                    MessageBox.Show($"Giocatore {playerIdx + 1} ha finito il posizionamento.", "Posizionamento", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                     SetGridEnabled(0, false);
                     if (multiplayerMode) SetGridEnabled(1, false);
