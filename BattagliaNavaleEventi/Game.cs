@@ -17,25 +17,32 @@ namespace BattagliaNavaleEventi
         Button[,] Buttons = new Button[10, 10];
         int[,] Grid = new int[10, 10];
         int[,] ShipTypes = {
-            { 5, 1 },
             { 4, 1 },
-            { 3, 1 },
-            { 3, 1 },
+            { 3, 2 },
             { 2, 2 },
-            { 1, 4 },
+            { 1, 1 },
         };
         Ship[,] Ships = new Ship[10, 10];
         int shipsSunk = 0;
         int numAttemps = 0;
+        bool canPlay = false;
 
         public Game(bool multiplayer)
         {
             InitializeComponent();
-            GenerateGrid();
-            InitializeGrid();
+            GenerateGrid(tbl_grid);
+
+            if (multiplayer)
+                GenerateGrid(tbl_grid2);
+
+            this.Size = multiplayer ? new Size(1597, 681) : new Size(970, 681);
+
+            lbl_bestAttemps.Visible = false;
+            lbl_numAttemps.Visible = false;
+            lbl_shipsSunk.Visible = false;
         }
 
-        private void GenerateGrid()
+        private void GenerateGrid(TableLayoutPanel grid)
         {
             for (int y = 0; y < 10; y++)
             {
@@ -52,7 +59,7 @@ namespace BattagliaNavaleEventi
                     btn_cell.Tag = $"{x} {y}";
                     btn_cell.BackgroundImageLayout = ImageLayout.Stretch;
 
-                    tbl_grid.Controls.Add(btn_cell);
+                    grid.Controls.Add(btn_cell);
                     Buttons[y, x] = btn_cell;
 
                     btn_cell.UseVisualStyleBackColor = true;
@@ -60,41 +67,6 @@ namespace BattagliaNavaleEventi
             }
         }
 
-        private void InitializeGrid()
-        {
-            int counter = 1;
-            const int numShip = 6;
-
-            for (int i = 0; i < numShip; i++)
-            {
-                for (int j = 0; j < ShipTypes[i, 1]; j++)
-                {
-                    bool vertical;
-                    int x;
-                    int y;
-                    int shipSize = ShipTypes[i, 0];
-                    do
-                    {
-                        vertical = random.Next(2) == 0;
-                        x = random.Next(10 - (vertical ? 0 : shipSize));
-                        y = random.Next(10 - (!vertical ? 0 : shipSize));
-                    }
-                    while (isSpaceUsed(vertical, x, y, shipSize));
-
-                    Ship currentShip = new Ship(x, y, shipSize, vertical);
-
-                    for (int k = 0; k < ShipTypes[i, 0]; k++)
-                    {
-                        int cy = (!vertical ? y : y + k);
-                        int cx = (vertical ? x : x + k);
-                        Grid[cy, cx] = counter;
-                        Ships[cy, cx] = currentShip;
-
-                    }
-                    counter++;
-                }
-            }
-        }
 
         private bool isSpaceUsed(bool vertical, int x, int y, int size)
         {
@@ -191,6 +163,26 @@ namespace BattagliaNavaleEventi
         {
             lbl_numAttemps.Text = "Numero tentativi: " + n;
         }
+
+        private void btn_PosNave4_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btn_PosNave3_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btn_PosNave2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btn_PosNave1_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
-}
+
