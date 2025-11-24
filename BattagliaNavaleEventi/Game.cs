@@ -183,6 +183,11 @@ namespace BattagliaNavaleEventi
         {
 
         }
+
+        private void btn_ResetPlacement_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
 

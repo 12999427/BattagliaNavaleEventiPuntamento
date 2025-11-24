@@ -188,6 +188,7 @@
             btn_ResetPlacement.TabIndex = 12;
             btn_ResetPlacement.Text = "Posiziona Nave 1";
             btn_ResetPlacement.UseVisualStyleBackColor = true;
+            btn_ResetPlacement.Click += btn_ResetPlacement_Click;
             // 
             // Game
             // 
