@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using BattagliaNavale;
@@ -23,9 +24,15 @@ namespace BattagliaNavaleEventi
         int selectedShipSize = 0;
         List<Point> currentPlacement = new List<Point>();
         bool placementPhaseCompleteForPlayer1 = false;
-        bool placementInProgress => selectedShipSize > 0;
 
         bool playing = false;
+        int shipsSunk1 = 0;
+        int numAttemps1 = 0;
+        int shipsSunk2 = 0;
+        int numAttemps2 = 0;
+        int CurrentPlayer = 0;
+
+        event EventHandler<ColpitoEventArgs> EventoAttacco = null;
 
         public Game(bool multiplayer)
         {
@@ -49,6 +56,24 @@ namespace BattagliaNavaleEventi
             btn_ResetPlacement.Click += (s, e) => ResetPlacement();
 
             UpdateShipButtonsState();
+
+            EventoAttacco += FunzioneLogAttacco;
+        }
+
+        public void FunzioneLogAttacco(object sender, ColpitoEventArgs ea)
+        {
+            if (ea.colpito)
+            {
+                Log($"Colpito in posizione({ea.coord.X}, {ea.coord.Y})");
+                System.Media.SoundPlayer player = new System.Media.SoundPlayer(@"../../../Colpito.wav");
+                player.Play();
+            }
+            else
+            {
+                Log($"Acqua !!");
+                System.Media.SoundPlayer player = new System.Media.SoundPlayer(@"../../../Acqua.wav");
+                player.Play();
+            }
         }
 
         private void GenerateGrid(TableLayoutPanel grid, int playerIndex)
@@ -77,19 +102,18 @@ namespace BattagliaNavaleEventi
 
         private void BeginPlacement(int size)
         {
-            if (shipCountsPlayer[activePlayer][size] <= 0) return;
             selectedShipSize = size;
             currentPlacement.Clear();
             SetShipButtonsEnabled(false);
 
-            SetGridEnabled(activePlayer, true);
+            SetGridEnabledPlacement(activePlayer, true);
             if (multiplayerMode)
-                SetGridEnabled(1 - activePlayer, false);
+                SetGridEnabledPlacement(1 - activePlayer, false);
 
             EnableFreeCells(activePlayer);
         }
 
-        private void SetGridEnabled(int playerIndex, bool enabled)
+        private void SetGridEnabledPlacement(int playerIndex, bool enabled)
         {
             var btns = ButtonsPlayer[playerIndex];
             for (int y = 0; y < 10; y++)
@@ -115,13 +139,140 @@ namespace BattagliaNavaleEventi
             Point p = tag.Item2;
             int x = p.X; int y = p.Y;
 
-            if (selectedShipSize > 0 && playerIdx == activePlayer)
+            if (!playing)
             {
-                HandlePlacementClick(playerIdx, x, y);
-                return;
+                if (selectedShipSize > 0 && playerIdx == activePlayer)
+                {
+                    HandlePlacementClick(playerIdx, x, y);
+                    return;
+                }
+            }
+            else
+            {
+                HandleAttackClick(playerIdx, x, y);
             }
 
         }
+
+        private void HandleAttackClick(int playerIdx, int x, int y)
+        {
+            if (CurrentPlayer == 0) numAttemps1++; else numAttemps2++;
+            updateAtteps();
+
+            bool colpito = GridPlayer[playerIdx][y, x] >= 1; //nave
+
+            EventoAttacco?.Invoke(this, new ColpitoEventArgs(colpito, new Point(x, y)));    
+
+
+            if (colpito) //nave
+            {
+
+                GridPlayer[playerIdx][y, x] = -2;
+                Ship curShip = ShipsPlayer[playerIdx][y, x];
+                if (curShip.removeTile())
+                {
+                    ShowColors(playerIdx);
+                    updateShipsSunk(playerIdx == 0 ? ++shipsSunk1 : ++shipsSunk2);
+                }
+            }
+            else if (GridPlayer[playerIdx][y, x] == 0)
+            {
+                GridPlayer[playerIdx][y, x] = -1;
+            }
+
+            ShowColors(playerIdx);
+
+            if (multiplayerMode)
+            {
+                CurrentPlayer = 1 - CurrentPlayer;
+
+                SetGridEnabledPlaying(CurrentPlayer, true);
+                SetGridEnabledPlaying(1 - CurrentPlayer, false);
+            }
+
+        }
+
+        private Color GetColor(int v, bool? sunk)
+        {
+            switch (v)
+            {
+                case -2: //colpo a segno
+                    if (sunk ?? false)
+                    {
+                        return Color.Black;
+                    }
+                    else
+                    {
+                        return Color.Red;
+                    }
+                case -1: //colpo mancato
+                    return Color.White;
+                case 0: //acqua inesplorata
+                    return Color.Blue;
+                default:
+                    if (false) //metti true per mostrare navi
+                    {
+                        return Color.Chocolate;
+                    }
+                    else
+                    {
+                        return Color.Blue;
+                    }
+
+            }
+        }
+
+        private void ShowColors(int playerIdx)
+        {
+            for (int y = 0; y < 10; y++)
+            {
+                for (int x = 0; x < 10; x++)
+                {
+                    Button b = ButtonsPlayer[playerIdx][y, x];
+
+                    // colore base
+                    b.BackColor = GetColor(GridPlayer[playerIdx][y, x], ShipsPlayer[playerIdx][y, x]?.sunk);
+                }
+            }
+        }
+
+        private void SetGridEnabledPlaying(int playerIdx, bool enabled)
+        {
+            foreach (Button b in ButtonsPlayer[playerIdx])
+            {
+                b.Enabled = enabled;
+            }
+        }
+
+        private void ShowVictory()
+        {
+            if (multiplayerMode)
+            {
+                MessageBox.Show("Ha vinto giocatore " + CurrentPlayer);
+            }
+            else
+            {
+                MessageBox.Show("Hai vinto");
+            }
+            Close();
+        }
+
+        private void updateShipsSunk(int n)
+        {
+            const int totNumShip = 6;
+            lbl_shipsSunk.Text = "Navi affondate: " + n;
+            if (n == totNumShip)
+            {
+                ShowVictory();
+            }
+        }
+
+
+        private void updateAtteps()
+        {
+            lbl_numAttemps.Text = $"Giocatore: {CurrentPlayer}\nNumero tentativi: {(CurrentPlayer == 0 ? numAttemps1 : numAttemps2)}";
+        }
+
 
         private void HandlePlacementClick(int playerIdx, int x, int y)
         {
@@ -147,7 +298,7 @@ namespace BattagliaNavaleEventi
 
             if (currentPlacement.Count == 2 && selectedShipSize > 1)
             {
-                EnsureStraightLineAndRestrict(playerIdx);
+                RestrictLineOptions(playerIdx);
                 if (selectedShipSize == 2)
                 {
                     FinalizePlacement(playerIdx);
@@ -182,24 +333,6 @@ namespace BattagliaNavaleEventi
                 }
         }
 
-        private void EnsureStraightLineAndRestrict(int playerIdx)
-        {
-
-            Point a = currentPlacement[0]; Point b = currentPlacement[1];
-            if (!(a.X == b.X || a.Y == b.Y))
-            {
-
-                var last = currentPlacement[1];
-                ButtonsPlayer[playerIdx][last.Y, last.X].BackColor = Color.LightBlue;
-                currentPlacement.RemoveAt(1);
-                MessageBox.Show("La seconda cella deve essere ortogonale rispetto alla prima.", "Errore posizionamento", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                RestrictNextCellsToAdjacent(playerIdx, a.X, a.Y);
-                return;
-            }
-
-            RestrictLineOptions(playerIdx);
-        }
-
         private void RestrictLineOptions(int playerIdx)
         {
 
@@ -220,8 +353,12 @@ namespace BattagliaNavaleEventi
 
                 for (int add = 1; add <= needed; add++)
                 {
-                    int yy = minY - add; if (yy >= 0 && GridPlayer[playerIdx][yy, col] == 0) btns[yy, col].Enabled = true;
-                    yy = maxY + add; if (yy < 10 && GridPlayer[playerIdx][yy, col] == 0) btns[yy, col].Enabled = true;
+                    int yy = minY - add;
+                    if (yy >= 0 && GridPlayer[playerIdx][yy, col] == 0)
+                        btns[yy, col].Enabled = true;
+                    yy = maxY + add;
+                    if (yy < 10 && GridPlayer[playerIdx][yy, col] == 0)
+                        btns[yy, col].Enabled = true;
                 }
             }
             else
@@ -231,8 +368,12 @@ namespace BattagliaNavaleEventi
                 int needed = selectedShipSize - currentPlacement.Count;
                 for (int add = 1; add <= needed; add++)
                 {
-                    int xx = minX - add; if (xx >= 0 && GridPlayer[playerIdx][row, xx] == 0) btns[row, xx].Enabled = true;
-                    xx = maxX + add; if (xx < 10 && GridPlayer[playerIdx][row, xx] == 0) btns[row, xx].Enabled = true;
+                    int xx = minX - add;
+                    if (xx >= 0 && GridPlayer[playerIdx][row, xx] == 0)
+                        btns[row, xx].Enabled = true;
+                    xx = maxX + add;
+                    if (xx < 10 && GridPlayer[playerIdx][row, xx] == 0)
+                        btns[row, xx].Enabled = true;
                 }
             }
         }
@@ -258,23 +399,37 @@ namespace BattagliaNavaleEventi
             return points.ToList();
         }
 
+        private Point GetOrigin(List<Point> pts, bool vertical)
+        {
+            Point best = pts[0];
+
+            for (int i = 1; i < pts.Count; i++)
+            {
+                if (vertical)
+                {
+                    // prendi quello col valore Y più piccolo
+                    if (pts[i].Y < best.Y)
+                        best = pts[i];
+                }
+                else
+                {
+                    //  quello col valore X più piccolo
+                    if (pts[i].X < best.X)
+                        best = pts[i];
+                }
+            }
+
+            return best;
+        }
+
+
 
         private void FinalizePlacement(int playerIdx)
         {
 
-            if (currentPlacement.Count != selectedShipSize)
-            {
-                MessageBox.Show("Numero celle selezionate non corrisponde alla dimensione della nave.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                ResetCurrentPlacementVisuals(playerIdx);
-                selectedShipSize = 0;
-                SetShipButtonsEnabled(true);
-                EnableFreeCells(playerIdx);
-                return;
-            }
-
             var pts = OrderPoints(currentPlacement);
             bool vertical = IsVertical(pts);
-            Point origin = pts.OrderBy(p => vertical ? p.Y : p.X).First();
+            Point origin = GetOrigin(pts, vertical);
             Ship s = new Ship(origin.X, origin.Y, selectedShipSize, vertical);
             foreach (var pt in pts)
             {
@@ -303,45 +458,40 @@ namespace BattagliaNavaleEventi
                 {
 
                     placementPhaseCompleteForPlayer1 = true;
-                    MessageBox.Show("Giocatore 1 ha finito il posizionamento. Ora tocca al Giocatore 2.", "Posizionamento", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("Giocatore 1 ha finito il posizionamento. Ora tocca al Giocatore 2.");
                     activePlayer = 1;
                     EnableFreeCells(activePlayer);
-                    SetGridEnabled(0, false);
-                    SetGridEnabled(1, true);
+                    SetGridEnabledPlacement(0, false);
+                    SetGridEnabledPlacement(1, true);
                     SetShipButtonsEnabled(true);
                 }
                 else
                 {
 
-                    MessageBox.Show($"Giocatore {playerIdx + 1} ha finito il posizionamento.", "Posizionamento", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"Giocatore {playerIdx + 1} ha finito il posizionamento.");
 
-                    SetGridEnabled(0, false);
-                    if (multiplayerMode) SetGridEnabled(1, false);
+                    SetGridEnabledPlacement(0, false);
+                    if (multiplayerMode) SetGridEnabledPlacement(1, false);
                 }
                 if (shipCountsPlayer[0].Values.All(v => v == 0) && (!multiplayerMode ? true : shipCountsPlayer[1].Values.All(v => v == 0)))
-                {
+                { // terminati piazzamenti
                     SetShipButtonsVisible(false);
                     lbl_Log.Visible = true;
                     playing = true;
+                    SetGridEnabledPlaying(0, true);
+                    ShowColors(0);
+                    if (multiplayerMode)
+                        ShowColors(1);
                 }
             }
             else
             {
 
                 EnableFreeCells(playerIdx);
-                SetGridEnabled(playerIdx, true);
+                SetGridEnabledPlaying(playerIdx, true);
             }
         }
 
-        private void ResetCurrentPlacementVisuals(int playerIdx)
-        {
-            foreach (var pt in currentPlacement)
-            {
-                var b = ButtonsPlayer[playerIdx][pt.Y, pt.X];
-                b.BackColor = Color.LightBlue;
-            }
-            currentPlacement.Clear();
-        }
 
         private void ResetPlacement()
         {
