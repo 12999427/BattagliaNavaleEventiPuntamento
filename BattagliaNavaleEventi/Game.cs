@@ -335,46 +335,50 @@ namespace BattagliaNavaleEventi
 
         private void RestrictLineOptions(int playerIdx)
         {
-
             var btns = ButtonsPlayer[playerIdx];
-            for (int yy = 0; yy < 10; yy++)
-                for (int xx = 0; xx < 10; xx++)
-                    btns[yy, xx].Enabled = false;
 
-            var xs = currentPlacement.Select(p => p.X).ToList();
-            var ys = currentPlacement.Select(p => p.Y).ToList();
-            bool vertical = xs.Distinct().Count() == 1;
+            foreach (var b in btns)
+                b.Enabled = false;
+
+            bool vertical = IsVertical(currentPlacement);
+
             if (vertical)
             {
-                int col = xs[0];
-                int minY = ys.Min(); int maxY = ys.Max();
+                OrderPointsYX(currentPlacement);
+                //currentPlacement.Sort((a, b) => a.Y.CompareTo(b.Y));
 
-                int needed = selectedShipSize - currentPlacement.Count;
+                int col = currentPlacement[0].X;
+                int minY = currentPlacement[0].Y;
+                int maxY = currentPlacement[currentPlacement.Count - 1].Y;
 
-                for (int add = 1; add <= needed; add++)
-                {
-                    int yy = minY - add;
-                    if (yy >= 0 && GridPlayer[playerIdx][yy, col] == 0)
-                        btns[yy, col].Enabled = true;
-                    yy = maxY + add;
-                    if (yy < 10 && GridPlayer[playerIdx][yy, col] == 0)
-                        btns[yy, col].Enabled = true;
-                }
+                //Celle adiacenti - solo le immediatamente adiacenti
+                int up = minY - 1;
+                int down = maxY + 1;
+
+                if (up >= 0 && GridPlayer[playerIdx][up, col] == 0)
+                    btns[up, col].Enabled = true;
+
+                if (down < 10 && GridPlayer[playerIdx][down, col] == 0)
+                    btns[down, col].Enabled = true;
             }
             else
             {
-                int row = ys[0];
-                int minX = xs.Min(); int maxX = xs.Max();
-                int needed = selectedShipSize - currentPlacement.Count;
-                for (int add = 1; add <= needed; add++)
-                {
-                    int xx = minX - add;
-                    if (xx >= 0 && GridPlayer[playerIdx][row, xx] == 0)
-                        btns[row, xx].Enabled = true;
-                    xx = maxX + add;
-                    if (xx < 10 && GridPlayer[playerIdx][row, xx] == 0)
-                        btns[row, xx].Enabled = true;
-                }
+                OrderPointsYX(currentPlacement);
+                //currentPlacement.Sort((a, b) => a.X.CompareTo(b.X));
+
+                int row = currentPlacement[0].Y;
+                int minX = currentPlacement[0].X;
+                int maxX = currentPlacement[currentPlacement.Count - 1].X;
+
+                //solo le celle adiacenti  immediate
+                int left = minX - 1;
+                int right = maxX + 1;
+
+                if (left >= 0 && GridPlayer[playerIdx][row, left] == 0)
+                    btns[row, left].Enabled = true;
+
+                if (right < 10 && GridPlayer[playerIdx][row, right] == 0)
+                    btns[row, right].Enabled = true;
             }
         }
 
@@ -388,16 +392,28 @@ namespace BattagliaNavaleEventi
 
             return true;
         }
-        private List<Point> OrderPoints(List<Point> points)
+        private List<Point> OrderPointsYX(List<Point> points)
         {
-            // Ordina prima per Y, poi nel caso essia sia uguale, per X
+            // ordina prima per Y, poi nel caso essia sia uguale, per X
             points.Sort((a, b) =>
             {
-                if (a.Y != b.Y) return a.Y - b.Y; // confronto Y
+                if (a.Y != b.Y)
+                    return a.Y - b.Y;       // confronto Y
                 return a.X - b.X;                  // se Y uguale, confronto X
             });
             return points.ToList();
         }
+
+        /*private List<Point> OrderPointsPrioritaX(List<Point> points)
+        {
+            points.Sort((a, b) =>
+            {
+                if (a.X != b.X)
+                    return a.X - b.X; 
+                return a.Y - b.Y;             
+            });
+            return points.ToList();
+        }*/
 
         private Point GetOrigin(List<Point> pts, bool vertical)
         {
@@ -423,11 +439,10 @@ namespace BattagliaNavaleEventi
         }
 
 
-
         private void FinalizePlacement(int playerIdx)
         {
 
-            var pts = OrderPoints(currentPlacement);
+            var pts = OrderPointsYX(currentPlacement);
             bool vertical = IsVertical(pts);
             Point origin = GetOrigin(pts, vertical);
             Ship s = new Ship(origin.X, origin.Y, selectedShipSize, vertical);
@@ -452,6 +467,7 @@ namespace BattagliaNavaleEventi
             selectedShipSize = 0;
 
             bool allPlaced = shipCountsPlayer[playerIdx].Values.All(v => v == 0);
+
             if (allPlaced)
             {
                 if (multiplayerMode && playerIdx == 0)
@@ -471,12 +487,13 @@ namespace BattagliaNavaleEventi
                     MessageBox.Show($"Giocatore {playerIdx + 1} ha finito il posizionamento.");
 
                     SetGridEnabledPlacement(0, false);
-                    if (multiplayerMode) SetGridEnabledPlacement(1, false);
+                    if (multiplayerMode)
+                        SetGridEnabledPlacement(1, false);
                 }
                 if (shipCountsPlayer[0].Values.All(v => v == 0) && (!multiplayerMode ? true : shipCountsPlayer[1].Values.All(v => v == 0)))
                 { // terminati piazzamenti
                     SetShipButtonsVisible(false);
-                    lbl_Log.Visible = true;
+                    txt_Log.Visible = true;
                     playing = true;
                     SetGridEnabledPlaying(0, true);
                     ShowColors(0);
@@ -550,7 +567,7 @@ namespace BattagliaNavaleEventi
 
         private void Log(string msg)
         {
-            lbl_Log.Text += "\n" + msg;
+            txt_Log.Text += Environment.NewLine + msg;
         }
     }
 }

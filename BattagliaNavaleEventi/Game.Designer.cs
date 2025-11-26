@@ -37,7 +37,7 @@
             btn_PosNave1 = new Button();
             tbl_grid2 = new TableLayoutPanel();
             btn_ResetPlacement = new Button();
-            lbl_Log = new Label();
+            txt_Log = new TextBox();
             SuspendLayout();
             // 
             // lbl_numAttemps
@@ -166,20 +166,23 @@
             btn_ResetPlacement.Text = "Reset";
             btn_ResetPlacement.UseVisualStyleBackColor = true;
             // 
-            // lbl_Log
+            // txt_Log
             // 
-            lbl_Log.Location = new Point(578, 133);
-            lbl_Log.Name = "lbl_Log";
-            lbl_Log.Size = new Size(239, 334);
-            lbl_Log.TabIndex = 13;
-            lbl_Log.Visible = false;
+            txt_Log.Location = new Point(581, 141);
+            txt_Log.Multiline = true;
+            txt_Log.Name = "txt_Log";
+            txt_Log.ReadOnly = true;
+            txt_Log.ScrollBars = ScrollBars.Vertical;
+            txt_Log.Size = new Size(231, 320);
+            txt_Log.TabIndex = 14;
+            txt_Log.Visible = false;
             // 
             // Game
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1382, 476);
-            Controls.Add(lbl_Log);
+            Controls.Add(txt_Log);
             Controls.Add(btn_ResetPlacement);
             Controls.Add(tbl_grid2);
             Controls.Add(btn_PosNave1);
@@ -192,6 +195,7 @@
             Name = "Game";
             Text = "Game";
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -204,6 +208,6 @@
         private Button btn_PosNave1;
         private TableLayoutPanel tbl_grid2;
         private Button btn_ResetPlacement;
-        private Label lbl_Log;
+        private TextBox txt_Log;
     }
 }
