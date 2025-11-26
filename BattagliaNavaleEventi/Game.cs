@@ -11,7 +11,7 @@ namespace BattagliaNavaleEventi
     public partial class Game : Form
     {
         Button[][,] ButtonsPlayer = new Button[2][,] { new Button[10, 10], new Button[10, 10] };
-        int[][,] GridPlayer = new int[2][,] { new int[10, 10], new int[10, 10] };
+        int[][,] GridPlayer = new int[2][,] { new int[10, 10], new int[10, 10] }; //0=acqua, -1=acqua colpita, -2=nave colpita, N=nave di dimensione N
         Ship[][,] ShipsPlayer = new Ship[2][,] { new Ship[10, 10], new Ship[10, 10] };
 
         Dictionary<int, int> shipCountsTemplate = new Dictionary<int, int> { { 4, 1 }, { 3, 2 }, { 2, 2 }, { 1, 1 } };
@@ -51,7 +51,7 @@ namespace BattagliaNavaleEventi
             btn_PosNave1.Click += (s, e) => BeginPlacement(1);
             btn_ResetPlacement.Click += (s, e) => ResetPlacement();
 
-            UpdateShipButtonsState();
+            SetShipButtonsEnabled(true);
 
             EventoAttacco += FunzioneLogAttacco;
         }
@@ -105,8 +105,6 @@ namespace BattagliaNavaleEventi
             SetGridEnabledPlacement(CurrentPlayer, true);
             if (multiplayerMode)
                 SetGridEnabledPlacement(1 - CurrentPlayer, false);
-
-            EnableFreeCells(CurrentPlayer);
         }
 
         private void SetGridEnabledPlacement(int playerIndex, bool enabled)
@@ -117,15 +115,14 @@ namespace BattagliaNavaleEventi
                     btns[y, x].Enabled = enabled && GridPlayer[playerIndex][y, x] == 0;
         }
 
-        private void EnableFreeCells(int playerIndex)
+        private void SetGridEnabledPlaying(int playerIdx, bool enabled)
         {
-            var btns = ButtonsPlayer[playerIndex];
-            for (int y = 0; y < 10; y++)
-                for (int x = 0; x < 10; x++)
-                {
-                    btns[y, x].Enabled = GridPlayer[playerIndex][y, x] == 0;
-                }
+            foreach (Button b in ButtonsPlayer[playerIdx])
+            {
+                b.Enabled = enabled;
+            }
         }
+
 
         private void ClickBtnCella(object? sender, EventArgs e)
         {
@@ -135,7 +132,7 @@ namespace BattagliaNavaleEventi
             Point p = tag.Item2;
             int x = p.X; int y = p.Y;
 
-            if (!playing)
+            if (!playing) //piazzamento
             {
                 if (selectedShipSize > 0 && playerIdx == CurrentPlayer)
                 {
@@ -152,22 +149,23 @@ namespace BattagliaNavaleEventi
 
         private void HandleAttackClick(int playerIdx, int x, int y)
         {
-            if (CurrentPlayer == 0) numAttemps1++; else numAttemps2++;
+            if (CurrentPlayer == 0)
+                numAttemps1++;
+            else
+                numAttemps2++;
+
             updateAtteps();
 
             bool colpito = GridPlayer[playerIdx][y, x] >= 1; //nave
 
             EventoAttacco?.Invoke(this, new ColpitoEventArgs(colpito, new Point(x, y)));    
 
-
             if (colpito) //nave
             {
-
                 GridPlayer[playerIdx][y, x] = -2;
                 Ship curShip = ShipsPlayer[playerIdx][y, x];
-                if (curShip.removeTile())
+                if (curShip.removeTile()) //ultimo tile
                 {
-                    ShowColors(playerIdx);
                     updateShipsSunk(playerIdx == 0 ? ++shipsSunk1 : ++shipsSunk2);
                 }
             }
@@ -232,13 +230,6 @@ namespace BattagliaNavaleEventi
             }
         }
 
-        private void SetGridEnabledPlaying(int playerIdx, bool enabled)
-        {
-            foreach (Button b in ButtonsPlayer[playerIdx])
-            {
-                b.Enabled = enabled;
-            }
-        }
 
         private void ShowVictory()
         {
@@ -272,10 +263,7 @@ namespace BattagliaNavaleEventi
 
         private void HandlePlacementClick(int playerIdx, int x, int y)
         {
-
-            if (GridPlayer[playerIdx][y, x] != 0) return;
-
-            if (currentPlacement.Count == 0)
+            if (currentPlacement.Count == 0) //primo
             {
                 currentPlacement.Add(new Point(x, y));
                 ButtonsPlayer[playerIdx][y, x].BackColor = Color.Orange;
@@ -284,48 +272,36 @@ namespace BattagliaNavaleEventi
 
                 if (selectedShipSize == 1)
                     FinalizePlacement(playerIdx);
-                return;
-            }
-
-            if (!ButtonsPlayer[playerIdx][y, x].Enabled) return;
-
-            currentPlacement.Add(new Point(x, y));
-            ButtonsPlayer[playerIdx][y, x].BackColor = Color.Orange;
-
-            if (currentPlacement.Count == 2 && selectedShipSize > 1)
-            {
-                RestrictLineOptions(playerIdx);
-                if (selectedShipSize == 2)
-                {
-                    FinalizePlacement(playerIdx);
-                    return;
-                }
-                return;
-            }
-
-            if (currentPlacement.Count >= selectedShipSize)
-            {
-
-                FinalizePlacement(playerIdx);
             }
             else
             {
+                currentPlacement.Add(new Point(x, y));
+                ButtonsPlayer[playerIdx][y, x].BackColor = Color.Orange;
 
-                if (currentPlacement.Count >= 2)
+                if (currentPlacement.Count == selectedShipSize) //finita
+                {
+                    FinalizePlacement(playerIdx);
+                }
+                else
+                {
                     RestrictLineOptions(playerIdx);
+                }
             }
         }
 
         private void RestrictNextCellsToAdjacent(int playerIdx, int x, int y)
         {
-
             var btns = ButtonsPlayer[playerIdx];
             for (int yy = 0; yy < 10; yy++)
                 for (int xx = 0; xx < 10; xx++)
                 {
-                    if (GridPlayer[playerIdx][yy, xx] != 0) { btns[yy, xx].Enabled = false; continue; }
-                    bool isNeighbor = (Math.Abs(xx - x) + Math.Abs(yy - y) == 1);
-                    btns[yy, xx].Enabled = isNeighbor;
+                    if (GridPlayer[playerIdx][yy, xx] != 0) //se non sono libere (c'è la nave) le disabilita
+                    {
+                        btns[yy, xx].Enabled = false;
+                        continue;
+                    }
+                    bool vicina = (Math.Abs(xx - x) + Math.Abs(yy - y) == 1);
+                    btns[yy, xx].Enabled = vicina;
                 }
         }
 
@@ -341,7 +317,6 @@ namespace BattagliaNavaleEventi
             if (vertical)
             {
                 OrderPointsYX(currentPlacement);
-                //currentPlacement.Sort((a, b) => a.Y.CompareTo(b.Y));
 
                 int col = currentPlacement[0].X;
                 int minY = currentPlacement[0].Y;
@@ -360,7 +335,6 @@ namespace BattagliaNavaleEventi
             else
             {
                 OrderPointsYX(currentPlacement);
-                //currentPlacement.Sort((a, b) => a.X.CompareTo(b.X));
 
                 int row = currentPlacement[0].Y;
                 int minX = currentPlacement[0].X;
@@ -397,7 +371,7 @@ namespace BattagliaNavaleEventi
                     return a.Y - b.Y;       // confronto Y
                 return a.X - b.X;                  // se Y uguale, confronto X
             });
-            return points.ToList();
+            return points;
         }
 
         private Point GetOrigin(List<Point> pts, bool vertical)
@@ -431,22 +405,18 @@ namespace BattagliaNavaleEventi
             bool vertical = IsVertical(pts);
             Point origin = GetOrigin(pts, vertical);
             Ship s = new Ship(origin.X, origin.Y, selectedShipSize, vertical);
-            foreach (var pt in pts)
+
+            foreach (Point pt in pts)
             {
                 GridPlayer[playerIdx][pt.Y, pt.X] = selectedShipSize;
-            }
-
-            foreach (var pt in pts) ShipsPlayer[playerIdx][pt.Y, pt.X] = s;
-
-            foreach (var pt in pts)
-            {
+                ShipsPlayer[playerIdx][pt.Y, pt.X] = s;
                 var b = ButtonsPlayer[playerIdx][pt.Y, pt.X];
                 b.BackColor = Color.Gray;
                 b.Enabled = false;
             }
 
             shipCountsPlayer[playerIdx][selectedShipSize]--;
-            UpdateShipButtonsState();
+            SetShipButtonsEnabled(true);
 
             currentPlacement.Clear();
             selectedShipSize = 0;
@@ -460,14 +430,12 @@ namespace BattagliaNavaleEventi
 
                     MessageBox.Show("Giocatore 1 ha finito il posizionamento. Ora tocca al Giocatore 2.");
                     CurrentPlayer = 1;
-                    EnableFreeCells(CurrentPlayer);
                     SetGridEnabledPlacement(0, false);
                     SetGridEnabledPlacement(1, true);
                     SetShipButtonsEnabled(true);
                 }
                 else
                 {
-
                     MessageBox.Show($"Giocatore {playerIdx + 1} ha finito il posizionamento.");
 
                     SetGridEnabledPlacement(0, false);
@@ -488,8 +456,6 @@ namespace BattagliaNavaleEventi
             }
             else
             {
-
-                EnableFreeCells(playerIdx);
                 SetGridEnabledPlaying(playerIdx, true);
             }
         }
@@ -506,28 +472,15 @@ namespace BattagliaNavaleEventi
                         GridPlayer[p][y, x] = 0;
                         ShipsPlayer[p][y, x] = null;
                         var btn = ButtonsPlayer[p][y, x];
-                        if (btn != null)
-                        {
-                            btn.BackColor = Color.LightBlue;
-                            btn.Enabled = (p == 0) || multiplayerMode;
-                        }
+                        btn.BackColor = Color.LightBlue;
+                        btn.Enabled = (p == 0) || multiplayerMode;
                     }
                 shipCountsPlayer[p] = shipCountsTemplate.ToDictionary(kv => kv.Key, kv => kv.Value);
             }
             CurrentPlayer = 0;
             selectedShipSize = 0;
             currentPlacement.Clear();
-            UpdateShipButtonsState();
-        }
-
-        private void UpdateShipButtonsState()
-        {
-
-            btn_PosNave4.Enabled = shipCountsPlayer[CurrentPlayer][4] > 0;
-            btn_PosNave3.Enabled = shipCountsPlayer[CurrentPlayer][3] > 0;
-            btn_PosNave2.Enabled = shipCountsPlayer[CurrentPlayer][2] > 0;
-            btn_PosNave1.Enabled = shipCountsPlayer[CurrentPlayer][1] > 0;
-
+            SetShipButtonsEnabled(true);
         }
 
         private void SetShipButtonsEnabled(bool enabled)
