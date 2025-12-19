@@ -35,6 +35,7 @@
             lbl_Titolo = new Label();
             btn_GiocatoreSingolo = new Button();
             btn_DueGiocatori = new Button();
+            btn_Bot = new Button();
             SuspendLayout();
             // 
             // lbl_bestAttemps
@@ -124,7 +125,7 @@
             // 
             btn_DueGiocatori.Anchor = AnchorStyles.Top;
             btn_DueGiocatori.Font = new Font("Sitka Small", 15.75F, FontStyle.Bold, GraphicsUnit.Point);
-            btn_DueGiocatori.Location = new Point(209, 234);
+            btn_DueGiocatori.Location = new Point(206, 234);
             btn_DueGiocatori.Name = "btn_DueGiocatori";
             btn_DueGiocatori.Size = new Size(290, 48);
             btn_DueGiocatori.TabIndex = 7;
@@ -133,11 +134,25 @@
             btn_DueGiocatori.UseVisualStyleBackColor = true;
             btn_DueGiocatori.Click += btn_DueGiocatori_Click;
             // 
+            // btn_Bot
+            // 
+            btn_Bot.Anchor = AnchorStyles.Top;
+            btn_Bot.Font = new Font("Sitka Small", 15.75F, FontStyle.Bold, GraphicsUnit.Point);
+            btn_Bot.Location = new Point(206, 312);
+            btn_Bot.Name = "btn_Bot";
+            btn_Bot.Size = new Size(290, 48);
+            btn_Bot.TabIndex = 8;
+            btn_Bot.Text = "👤💻 | Contro Bot";
+            btn_Bot.TextAlign = ContentAlignment.MiddleLeft;
+            btn_Bot.UseVisualStyleBackColor = true;
+            btn_Bot.Click += btn_Bot_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(708, 468);
+            Controls.Add(btn_Bot);
             Controls.Add(btn_DueGiocatori);
             Controls.Add(btn_GiocatoreSingolo);
             Controls.Add(lbl_Titolo);
@@ -156,5 +171,6 @@
         private Label lbl_Titolo;
         private Button btn_GiocatoreSingolo;
         private Button btn_DueGiocatori;
+        private Button btn_Bot;
     }
 }

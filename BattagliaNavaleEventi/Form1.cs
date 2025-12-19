@@ -17,12 +17,12 @@ namespace BattagliaNavaleEventi
             LanciaGioco(true);
         }
 
-        private void LanciaGioco(bool multiplayer)
+        private void LanciaGioco(bool multiplayer, bool bot=false)
         {
             Hide();
             try
             {
-                using (Game form = new Game(multiplayer))
+                using (Game form = new Game(multiplayer, bot))
                 {
                     DialogResult dr = form.ShowDialog();
                     if (dr != DialogResult.Abort)
@@ -33,6 +33,11 @@ namespace BattagliaNavaleEventi
             {
                 MessageBox.Show("Errore sconosciuto", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void btn_Bot_Click(object sender, EventArgs e)
+        {
+            LanciaGioco(true, true);
         }
     }
 }

@@ -28,12 +28,22 @@ namespace BattagliaNavaleEventi
         int shipsSunk2 = 0;
         int numAttemps2 = 0;
 
+        Random random = new Random(Environment.TickCount);
+
+        bool SecondIsBot;
+        bool puntamentoAttivo = false; //se ha identificato un punto a cui puntare, scoprendo le celle vicine
+        Point puntamentoIdx1; //i due estremi per ora trovati
+        Point puntamentoIdx2;
+        bool? puntamentoVerticale; //null = non lo si sa ancora
+        //aggiungi altre variabili che ti serviranno
+
         event EventHandler<ColpitoEventArgs> EventoAttacco = null;
 
-        public Game(bool multiplayer)
+        public Game(bool multiplayer, bool bot=false)
         {
             InitializeComponent();
             multiplayerMode = multiplayer;
+            SecondIsBot = bot;
 
             GenerateGrid(tbl_grid, 0);
             if (multiplayer)
@@ -127,7 +137,6 @@ namespace BattagliaNavaleEventi
             }
         }
 
-
         private void ClickBtnCella(object? sender, EventArgs e)
         {
             Button btn_sender = (Button)sender;
@@ -147,11 +156,32 @@ namespace BattagliaNavaleEventi
             else
             {
                 HandleAttackClick(playerIdx, x, y);
+
+                if (SecondIsBot)
+                {
+                    Thread.Sleep(100);
+                    if (!puntamentoAttivo)
+                        HandleAttackClick(playerIdx, random.Next(0, 11), random.Next(0, 11), true);
+                    else
+                    {
+                        if (puntamentoVerticale == null)
+                        {
+                            int xNext = puntamentoIdx1.X + 1;
+                            if (xNext == 10)
+                                xNext = 8;
+                            HandleAttackClick(playerIdx, xNext, puntamentoIdx1.Y, true);
+                        }
+                        else
+                        {
+
+                        }
+                    }
+                }
             }
 
         }
 
-        private void HandleAttackClick(int playerIdx, int x, int y)
+        private void HandleAttackClick(int playerIdx, int x, int y, bool bot = false)
         {
             if (CurrentPlayer == 0)
                 numAttemps1++;
@@ -188,6 +218,13 @@ namespace BattagliaNavaleEventi
                 SetGridEnabledPlaying(1 - CurrentPlayer, false);
             }
 
+        }
+        public void Puntamento(object sender, ColpitoEventArgs ea)
+        {
+            puntamentoAttivo = true;
+            puntamentoIdx1 = ea.coord;
+            puntamentoVerticale = null;
+            direzioneEstensionePositiva = true;
         }
 
         private Color GetColor(int v, bool? sunk)
@@ -233,7 +270,6 @@ namespace BattagliaNavaleEventi
                 }
             }
         }
-
 
         private void ShowVictory()
         {
@@ -404,7 +440,6 @@ namespace BattagliaNavaleEventi
             return best;
         }
 
-
         private void FinalizePlacement(int playerIdx)
         {
 
@@ -470,7 +505,6 @@ namespace BattagliaNavaleEventi
                 SetGridEnabledPlaying(playerIdx, true);
             }
         }
-
 
         private void ResetPlacement()
         {
