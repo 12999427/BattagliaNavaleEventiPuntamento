@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BattagliaNavale
 {
-    internal class Ship
+    public class Ship
     {
         public int x { get; }
         public int y { get; }
