@@ -153,7 +153,7 @@ namespace BattagliaNavaleEventi
             HandleAttackClick(pIndex, target.X, target.Y, true);
 
             // ANALISI RISULTATO
-
+            
             int result = GridPlayer[pIndex][target.Y, target.X];
             bool sunk = false;
             if (ShipsPlayer[pIndex][target.Y, target.X] != null)
