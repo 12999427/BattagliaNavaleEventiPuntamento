@@ -105,7 +105,7 @@ namespace BattagliaNavaleEventi
 
                 if (SecondIsBot)
                 {
-                    EseguiMossaBot();
+                    //EseguiMossaBot();
                 }
 
                 return true;
