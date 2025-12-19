@@ -29,11 +29,6 @@ namespace BattagliaNavaleEventi
         Random random = new Random(Environment.TickCount);
 
         bool SecondIsBot;
-        bool puntamentoAttivo = false; //se ha identificato un punto a cui puntare, scoprendo le celle vicine
-        Point puntamentoIdx1; //i due estremi per ora trovati
-        Point puntamentoIdx2;
-        bool? puntamentoVerticale; //null = non lo si sa ancora
-        //aggiungi altre variabili che ti serviranno
 
         public event EventHandler<ColpitoEventArgs> EventoAttacco = null;
 
@@ -46,6 +41,7 @@ namespace BattagliaNavaleEventi
         public event EventHandler<(int playerId, bool enabled)> SetGridEnabledGraphics;
         public event EventHandler PlacementEndedGraphics;
         public event EventHandler<string> ShowAlert;
+
 
         public GameManager(bool multiplayer, bool bot = false)
         {
@@ -103,27 +99,13 @@ namespace BattagliaNavaleEventi
             }
             else
             {
+                if (SecondIsBot && CurrentPlayer == 1) return false;
+
                 HandleAttackClick(playerIdx, x, y);
 
                 if (SecondIsBot)
                 {
-                    Thread.Sleep(100);
-                    if (!puntamentoAttivo)
-                        HandleAttackClick(playerIdx, random.Next(0, 11), random.Next(0, 11), true);
-                    else
-                    {
-                        if (puntamentoVerticale == null)
-                        {
-                            int xNext = puntamentoIdx1.X + 1;
-                            if (xNext == 10)
-                                xNext = 8;
-                            HandleAttackClick(playerIdx, xNext, puntamentoIdx1.Y, true);
-                        }
-                        else
-                        {
-
-                        }
-                    }
+                    EseguiMossaBot();
                 }
 
                 return true;
@@ -135,6 +117,7 @@ namespace BattagliaNavaleEventi
             if (CurrentPlayer == 0)
                 numAttemps1++;
             else
+                numAttemps2++;
                 numAttemps2++;
 
             UpdateAttepsGraphics?.Invoke(this, ((CurrentPlayer==0 ? numAttemps1 : numAttemps2), CurrentPlayer));
@@ -164,8 +147,8 @@ namespace BattagliaNavaleEventi
             {
                 CurrentPlayer = 1 - CurrentPlayer;
 
-                SetGridEnabledGraphics?.Invoke(this, (CurrentPlayer, true));
-                SetGridEnabledGraphics?.Invoke(this, (1-CurrentPlayer, false));
+                SetGridEnabledGraphics?.Invoke(this, (CurrentPlayer, false));
+                SetGridEnabledGraphics?.Invoke(this, (1-CurrentPlayer, true));
             }
 
         }
@@ -224,8 +207,6 @@ namespace BattagliaNavaleEventi
 
             return best;
         }
-
-
 
         private void FinalizePlacement(int playerIdx)
         {
@@ -286,7 +267,8 @@ namespace BattagliaNavaleEventi
 
                     if (multiplayerMode)
                     {
-                        SetGridEnabledGraphics (this, (1, false));
+                        SetGridEnabledGraphics (this, (1, true));
+                        SetGridEnabledGraphics(this, (0, false));
                         UpdateGUI?.Invoke(this, 1);
                         UpdateShipsSunkGraphics?.Invoke(this, (1, shipsSunk2));
                         UpdateAttepsGraphics?.Invoke(this, (numAttemps2, 1));
